@@ -1,6 +1,6 @@
 {
   "Name": "Cookie Autosplit",
-  "ID": "CCSplit",
+  "ID": "ccSplit",
   "Author": "TsFreddie",
   "Description": "Count your actual logics ticks for your cookie clicker run",
   "ModVersion": 1,
@@ -8,6 +8,6 @@
   "Date": "16/09/2021",
   "Dependencies": [],
   "LanguagePacks": [],
-  "AllowSteamAchievs": false,
+  "AllowSteamAchievs": true,
   "Disabled": 1
 }
