@@ -2,7 +2,7 @@
 
 This is a timer/auto split mod for Cookie Clicker.
 
-> **WARNING: console, add-ons or scripts are against rules of the speedrun.com leaderbord**
+> **WARNING: console, add-ons or scripts are against rules of the speedrun.com leaderboard**
 >
 > **DO NOT SUBMIT RUNS WITH THIS MOD**
 > 
