@@ -1,0 +1,106 @@
+#srTimerContainer {
+  position: absolute;
+  z-index: 1000000000;
+  min-width: 145px;
+  font-weight: bold;
+  font-family: Courier, monospace;
+  color: #fff;
+  cursor: move;
+  z-index: 99999998;
+  padding-bottom: 0;
+}
+
+#srTimerTitle {
+  text-align: center;
+  margin: 6px;
+}
+
+#srTimerTimer {
+  font-size: 24px;
+  text-align: right;
+  min-height: 1em;
+}
+
+.sr-split-delta {
+
+}
+
+.sr-split-time {
+  margin-right: 8px;
+}
+
+.sr-split-line {
+  display: flex;
+  justify-content: space-between;
+  flex-direction: row;
+  margin-left: -8px;
+  margin-right: -8px;
+  padding-top: 6px;
+  padding-bottom: 2px;
+  text-align: left;
+  font-size: 8pt;
+  height: 16px;
+}
+
+.sr-split-icon {
+  position: relative;
+  margin-top: -6px;
+  margin-right: 2px;
+  float: left;
+  width: 24px;
+  height: 24px;
+  background-size: 816px;
+  background-image: url(../../../src/img/icons.png);
+}
+
+#srTimerExtra {
+  width: 100%;
+  background-color: #44444433;
+  cursor: pointer;
+}
+
+.sr-fail-icon {
+  position: relative;
+  float: left;
+  width: 24px;
+  height: 24px;
+  background-size: 816px;
+  background-image: url(../../../src/img/icons.png);
+  margin: 2px;
+}
+
+.sr-tooltip {
+  position: absolute;
+  visibility: hidden;
+  min-width: 80px;
+  background-color: black;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  top: 34px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  border: 1px solid #bbb;
+
+  /* Position the tooltip */
+  z-index: 99999999;
+}
+
+.sr-fail-icon:hover .sr-tooltip {
+  visibility: visible;
+}
+
+.sr-split-line:nth-child(odd) {
+  background-color: #ffffff33;
+}
+
+.sr-split-line:nth-child(even) {
+  background-color: #44444433;
+}
+
+#srTimerTimer {
+  padding-top: 6px;
+  background-color: #222222ff;
+  margin-left: -8px;
+  margin-right: -8px;
+}

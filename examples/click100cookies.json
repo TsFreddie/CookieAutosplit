@@ -1,7 +1,21 @@
 {
   "name": "100 cookies (clicking only)",
   "splits": [
-    { "name": "Click 100 cookies", "condition": "Game.cookies>=100" },
-    { "name": "Building", "type": "fail", "condition": "Game.BuildingsOwned!=0||Game.goldenClicks!=0" }
+    {
+      "name": "100 cookies",
+      "condition": "Game.cookies>=100"
+    },
+    {
+      "name": "No Building",
+      "type": "fail",
+      "condition": "Game.BuildingsOwned!=0",
+      "icon": [11, 33]
+    },
+    {
+      "name": "No GCookies",
+      "type": "fail",
+      "condition": "Game.goldenClicks!=0",
+      "icon": [2, 5]
+    }
   ]
 }

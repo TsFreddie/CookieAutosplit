@@ -32,24 +32,32 @@ Game.registerMod('ccSplit', {
     The timer will stop once all splits are completed.
   */
   init: function () {
+    this.dirURI = this.dir ? 'file:///' + this.dir.replace(/\\/g, '/') : 'ccSplit';
     this.logicTicks = 0;
     this.displayTick = 0;
     this.timerStarted = false;
     this.timerRunning = false;
     this.timerFailed = false;
 
-    this.lastKeyPress = false;
-
-    // Prepare timer display
-    l('centerArea').insertAdjacentHTML(
-      'afterEnd',
-      '<div class="framed" id="srTimer" style="text-align:right;position:absolute;z-index:1000000000;min-width:145px;left:16px;min-height:1em;top:112px;pointer-events:none;font-size:24px;font-weight:bold;font-family:Courier,monospace;color:#fff;text-shadow:0px -1px 1px #09f, 0px 1px 1px #f04;"></div>'
-    );
-    this.timerL = l('srTimer');
+    this.prepareSplitWindow();
 
     this.splitData = { name: loc('Not loaded'), splits: [] };
+    this.keyBindings = {
+      split: {
+        name: 'q',
+        keyCode: 81,
+      },
+      unsplit: {
+        name: 'w',
+        keyCode: 87,
+      },
+      stop: {
+        name: 'p',
+        keyCode: 80,
+      },
+    };
+    this.keyState = {};
     this.hash = '';
-    this.loadSplit();
 
     Game.registerHook('reset', this.reset.bind(this));
     Game.registerHook('logic', this.logic.bind(this));
@@ -62,6 +70,19 @@ Game.registerMod('ccSplit', {
       this.innerText = this.textContent = text;
       return this.innerHTML.replace(/^\s+|\s+$/g, '');
     }.bind(document.createElement('div'));
+
+    this.keyDown = false;
+
+    const MOD = this;
+    AddEvent(window, 'keydown', function (e) {
+      console.log(e);
+      for (let keyFunc in MOD.keyBindings) {
+        if (e.keyCode == MOD.keyBindings[keyFunc].keyCode) {
+          MOD.keyState[keyFunc] = true;
+          break;
+        }
+      }
+    });
   },
 
   reset: function (wipe) {
@@ -70,7 +91,7 @@ Game.registerMod('ccSplit', {
       this.timerRunning = true;
       this.timerStarted = true;
       for (const split of this.splitData.splits) {
-        split.completed = false;
+        split.completed = null;
       }
     } else {
       // The logic where Game.T resets to 0 is independent from Game.Logic / Game.Loop
@@ -86,10 +107,51 @@ Game.registerMod('ccSplit', {
     this.logicTicks++;
     if (this.timerStarted && this.timerRunning) {
       this.displayTick = this.logicTicks;
-      this.checkSplit();
+      this.checkSplit(this.keyState.split);
+      if (this.keyState.stop) {
+        this.timerRunning = false;
+        this.timerStarted = false;
+        this.timerFailed = false;
+      }
     } else if (this.timerStarted) {
-      // TODO: check key then reset timer
+      if (this.keyState.stop) {
+        this.timerStarted = false;
+        this.timerFailed = false;
+      }
     }
+
+    // Reset key state
+    for (let keyFunc in this.keyState) {
+      this.keyState[keyFunc] = false;
+    }
+  },
+
+  prepareSplitWindow: function () {
+    // fancy text
+    // text-shadow:0px -1px 1px #09f, 0px 1px 1px #f04;
+    // Prepare timer display
+
+    document.head.insertAdjacentHTML(
+      'beforeend',
+      '<link href="' + this.dirURI + '/styles.css" rel="stylesheet" type="text/css">'
+    );
+
+    l('centerArea').insertAdjacentHTML(
+      'afterEnd',
+      '<div class="framed" id="srTimerContainer" style="">' +
+        '<div id="srTimerTitle"></div>' +
+        '<div id="srTimerSplitContainer"></div>' +
+        '<div id="srTimerTimer"></div>' +
+        '<div id="srTimerExtra"></div>' +
+        '</div>'
+    );
+
+    this.timerContainerL = l('srTimerContainer');
+    this.timerTitleL = l('srTimerTitle');
+    this.timerSplitContainer = l('srTimerSplitContainer');
+    this.timerL = l('srTimerTimer');
+    this.timerExtraL = l('srTimerExtra');
+    this.timerSplitsL = [];
   },
 
   checkSplit: function (manualSplit = false) {
@@ -99,40 +161,61 @@ Game.registerMod('ccSplit', {
     let complete = true;
     for (let i = 0; i < this.splitData.splits.length; i++) {
       const split = this.splitData.splits[i];
-      if (split.type == null || split.type === 'consequential') {
-        if (!split.completed && this.safeEval(split.func)) {
-          split.completed = this.logicTicks;
-          for (const prev of prevConsequential) {
-            if (!prev.completed) prev.completed = this.logicTicks;
-          }
-        }
-        prevConsequential.push(split);
-      } else if (split.type === 'sequential') {
+      if (split.type == null || split.type === 'sequential') {
         if (
-          !split.completed &&
+          split.completed == null &&
           (lastSequential == null || lastSequential.completed) &&
           this.safeEval(split.func)
         ) {
           split.completed = this.logicTicks;
+          split.prevBest = split.best;
+          split.best = Math.min(split.best ?? Infinity, split.completed);
+          this.saveSplit();
         }
         lastSequential = split;
-      } else if (split.type === 'individual') {
-        if (!split.completed && this.safeEval(split.func)) {
+      } else if (split.type === 'consequential') {
+        if (split.completed == null && this.safeEval(split.func)) {
           split.completed = this.logicTicks;
+          split.prevBest = split.best;
+          split.best = Math.min(split.best ?? Infinity, split.completed);
+          this.saveSplit();
+          for (const prev of prevConsequential) {
+            if (!prev.completed) {
+              prev.completed = this.logicTicks;
+              prev.prevBest = prev.best;
+              prev.best = Math.min(prev.best ?? Infinity, prev.completed);
+            }
+          }
+        }
+        prevConsequential.push(split);
+      } else if (split.type === 'individual') {
+        if (split.completed == null && this.safeEval(split.func)) {
+          split.completed = this.logicTicks;
+          split.prevBest = split.best;
+          split.best = Math.min(split.best ?? Infinity, split.completed);
+          this.saveSplit();
         }
       } else if (split.type === 'manual') {
-        if (!split.completed && (lastManual == null || lastManual.completed) && manualSplit) {
+        if (
+          split.completed == null &&
+          (lastManual == null || lastManual.completed) &&
+          manualSplit
+        ) {
           split.completed = this.logicTicks;
+          split.prevBest = split.best;
+          split.best = Math.min(split.best ?? Infinity, split.completed);
+          this.saveSplit();
         }
         lastManual = split;
       } else if (split.type === 'fail') {
         if (this.safeEval(split.func)) {
           this.saveSplit();
+          split.completed = this.logicTicks;
           this.timerRunning = false;
-          this.timerFailed = false;
+          this.timerFailed = true;
         }
       }
-      if (!split.completed && split.type !== 'fail') complete = false;
+      if (split.completed == null && split.type !== 'fail') complete = false;
     }
 
     if (complete && this.timerRunning) {
@@ -151,16 +234,41 @@ Game.registerMod('ccSplit', {
 
   draw: function () {
     if (Game.onMenu) {
-      this.timerL.style.opacity = 0.3;
+      this.timerContainerL.style.opacity = 0.3;
     } else {
-      this.timerL.style.opacity = 1;
+      this.timerContainerL.style.opacity = 1;
     }
+
+    let segCount = 0;
+    let failCount = 0;
+
+    for (const split of this.splitData.splits) {
+      if (split.type !== 'fail') {
+        if (split.completed != null && split.prevBest != null) {
+          l(`srSegDelta${segCount}`).innerText = `${
+            split.completed <= split.prevBest ? '-' : '+'
+          }${this.tickToTime(Math.abs(split.completed - split.prevBest))}`;
+        } else {
+          l(`srSegDelta${segCount}`).innerText = '';
+        }
+        l(`srSegTime${segCount}`).innerText = this.tickToTime(split.completed ?? split.best ?? -1);
+        segCount += 1;
+      } else {
+        if (split.completed != null) {
+          l(`srFail${failCount}`).style.opacity = 1;
+        } else {
+          l(`srFail${failCount}`).style.opacity = 0.3;
+        }
+        failCount += 1;
+      }
+    }
+
     if (this.splitData.splits.length === 0) {
       this.timerL.style.color = '#fff';
       this.timerL.style.textShadow = '0px -1px 1px #09f, 0px 1px 1px #f04';
       this.timerL.innerHTML =
         '<span style="font-size:12px;text-align:center;width:100%;display:inline-block">' +
-        loc('No splits') +
+        loc('Please import split data') +
         '</span>';
     } else if (!this.timerStarted) {
       this.timerL.style.color = '#fff';
@@ -178,15 +286,57 @@ Game.registerMod('ccSplit', {
         this.timerL.style.textShadow = '';
       }
 
-      this.timerL.innerHTML = this.tickToTime(this.displayTick);
+      this.timerL.innerHTML = `${this.timerFailed ? '[F]' : ''}${this.tickToTime(this.displayTick)}`;
     }
   },
 
-  drawSplits: function () {
+  export: function () {
+    const data = {};
+    if (this.splitData.name != null) {
+      data.name = this.splitData.name;
+    }
+    data.splits = [];
+    for (const split of this.splitData.splits) {
+      const s = {};
+      s.type = split.type;
 
+      if (split.name != null) {
+        s.name = split.name;
+      }
+
+      if (split.type !== 'manual' && split.condition != null) {
+        s.condition = split.condition;
+      }
+
+      if (split.icon != null) {
+        s.icon = split.icon;
+      }
+
+      if (split.best != null) {
+        s.best = split.best;
+      }
+
+      data.splits.push(s);
+    }
+
+    return data;
+  },
+
+  save: function () {
+    return JSON.stringify({
+      keyBindings: this.keyBindings,
+      splits: this.export(),
+    });
+  },
+
+  load: function (str) {
+    const data = JSON.parse(str);
+    this.keyBindings = data.keyBindings;
+    this.import(data.splits);
   },
 
   tickToTime: function (tick) {
+    if (tick < 0) return '-';
     const centiseconds = Math.round((tick / Game.fps) * 100);
     let minutes = Math.floor(Math.floor(centiseconds / 100) / 60);
     const seconds = centiseconds / 100 - minutes * 60;
@@ -228,18 +378,20 @@ Game.registerMod('ccSplit', {
       '</div>' +
       '<div class="listing"><b>' +
       'Split Hash:' +
-      '</b> ' +
+      '</b><span style="user-select: all">' +
       this.hash +
-      '</div>' +
+      '</span></div>' +
       '</div>'
     );
   },
 
-  import: function (splitStr) {
+  import: function (split) {
     this.hash = '[Calculating Hash]';
     this.timerStarted = false;
+    this.timerFailed = false;
+    this.timerRunning = false;
     try {
-      const data = JSON.parse(splitStr);
+      const data = typeof split == 'string' ? JSON.parse(split) : split;
       if (!this.validateSplit(data)) {
         this.splitHash();
         return false;
@@ -250,8 +402,61 @@ Game.registerMod('ccSplit', {
       return false;
     }
     this.splitHash();
+
+    // update split window
+    this.timerTitleL.innerHTML = this.splitData.name;
+
+    // remove splits
+    while (this.timerSplitContainer.firstChild) {
+      this.timerSplitContainer.removeChild(this.timerSplitContainer.firstChild);
+    }
+    // remove extras
+    while (this.timerExtraL.firstChild) {
+      this.timerExtraL.removeChild(this.timerExtraL.firstChild);
+    }
+
+    let segCount = 0;
+    let failCount = 0;
+    for (const split of this.splitData.splits) {
+      if (split.type !== 'fail') {
+        this.timerSplitContainer.insertAdjacentHTML(
+          'beforeEnd',
+          `<div class="sr-split-line"><div class="sr-split-desc">${this.icon(
+            'class="sr-split-icon"',
+            split.icon || [8, 0],
+            24
+          )}<span class="sr-split-name">${
+            split.name || 'Segment ' + segCount.toString()
+          }</span></div><span class="sr-split-delta" id="srSegDelta${segCount}"></span><span class="sr-split-time" id="srSegTime${segCount}"></span></div>`
+        );
+        segCount += 1;
+      } else {
+        this.timerExtraL.insertAdjacentHTML(
+          'beforeEnd',
+          this.icon(
+            `class="sr-fail-icon" id="srFail${failCount}"`,
+            split.icon || [1, 7],
+            24,
+            `<div class="sr-tooltip">${split.name || `Fail cond ${failCount}`}</div>`
+          )
+        );
+        failCount += 1;
+      }
+    }
+
     this.saveSplit();
     return true;
+  },
+
+  icon: function (attr = '', icon = null, size = 48, content = '') {
+    return `<span ${attr}
+    ${
+      icon
+        ? `style="${icon[2] ? `background-image:url(${icon[2]});` : ''}${`background-position:${
+            -icon[0] * size
+          }px ${-icon[1] * size}px;`}"`
+        : ''
+    }>${content}</span>`;
   },
 
   importPrompt: function () {
@@ -261,6 +466,10 @@ Game.registerMod('ccSplit', {
         loc('Import split data') +
         '</h3><div class="block">' +
         loc('Please paste your split data.') +
+        '<br>' +
+        '<a href="#" onclick="App.openLink(\'https://github.com/TsFreddie/CookieAutosplit/tree/master/examples\');">[' +
+        loc('Examples') +
+        ']</a>' +
         '<div id="importError" class="warning" style="font-weight:bold;font-size:11px;"></div></div><div class="block"><textarea id="textareaPrompt" style="width:100%;height:128px;">' +
         '</textarea></div>',
       [
@@ -283,7 +492,7 @@ Game.registerMod('ccSplit', {
           'This code contains both your split settings AND your record.<br>Copy it and keep it somewhere safe!'
         ) +
         '</div><div class="block"><textarea id="textareaPrompt" style="width:100%;height:128px;" readonly>' +
-        JSON.stringify(this.splitData) +
+        JSON.stringify(this.export()) +
         '</textarea></div>',
       [loc('All done!')]
     ); //prompt('Copy this text and keep it somewhere safe!',Game.WriteSave(1));
@@ -292,26 +501,7 @@ Game.registerMod('ccSplit', {
   },
 
   saveSplit: function () {
-    localStorageSet('srTimerSplits', JSON.stringify(this.splitData));
-  },
-
-  loadSplit: function() {
-    this.hash = '[Calculating Hash]';
-    this.timerStarted = false;
-    try {
-      const splitStr = localStorageGet('srTimerSplits'); 
-      const data = JSON.parse(splitStr);
-      if (!this.validateSplit(data)) {
-        this.splitHash();
-        return false;
-      }
-      this.splitData = data;
-    } catch (e) {
-      this.splitHash();
-      return false;
-    }
-    this.splitHash();
-    return true;
+    Game.toSave = true;
   },
 
   validateSplit: function (splitData) {
@@ -343,11 +533,25 @@ Game.registerMod('ccSplit', {
       } else if (split.type !== 'manual') {
         return false;
       }
+
+      if (split.icon != null) {
+        if (!Array.isArray(split.icon)) return false;
+        if (typeof split.icon[0] != 'number') return false;
+        if (typeof split.icon[1] != 'number') return false;
+        if (split.icon[2] != null && typeof split.icon[2] != 'string') return false;
+      }
+
+      if (split.best != null && typeof split.best != 'number') return false;
     }
     return true;
   },
 
   splitHash: async function () {
+    if (this.splitData.splits.length === 0) {
+      this.hash = '';
+      return '';
+    }
+
     const hashStr = [];
     for (const split of this.splitData.splits) {
       hashStr.push(`${split.type}|${split.condition}`);
