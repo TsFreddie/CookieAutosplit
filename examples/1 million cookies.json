@@ -1,0 +1,29 @@
+{
+  "name": "1 Million Cookies",
+  "splits": [
+    {
+      "name": "First cookie",
+      "type": "consequential",
+      "condition": "Game.cookiesEarned>=1",
+      "icon": [0,5]
+    },
+    {
+      "name": "100K cookies",
+      "type": "consequential",
+      "condition": "Game.cookiesEarned>=100000",
+      "icon": [1,5]
+    },
+    {
+      "name": "1M cookies",
+      "type": "consequential",
+      "condition": "Game.cookiesEarned>=1000000",
+      "icon": [2,5]
+    },
+    {
+      "name": "Achievement!",
+      "type": "consequential",
+      "condition": "Game.HasAchiev('Fledgling bakery')",
+      "icon": [3,5]
+    }
+  ]
+}

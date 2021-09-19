@@ -75,7 +75,6 @@ Game.registerMod('ccSplit', {
 
     const MOD = this;
     AddEvent(window, 'keydown', function (e) {
-      console.log(e);
       for (let keyFunc in MOD.keyBindings) {
         if (e.keyCode == MOD.keyBindings[keyFunc].keyCode) {
           MOD.keyState[keyFunc] = true;
@@ -105,18 +104,28 @@ Game.registerMod('ccSplit', {
 
   logic: function () {
     this.logicTicks++;
-    if (this.timerStarted && this.timerRunning) {
-      this.displayTick = this.logicTicks;
-      this.checkSplit(this.keyState.split);
+
+    if (this.timerStarted) {
       if (this.keyState.stop) {
         this.timerRunning = false;
         this.timerStarted = false;
         this.timerFailed = false;
       }
-    } else if (this.timerStarted) {
-      if (this.keyState.stop) {
-        this.timerStarted = false;
-        this.timerFailed = false;
+    }
+
+    if (this.timerStarted) {
+      if (this.keyState.unsplit) {
+        this.unsplit();
+      }
+
+      if (this.timerRunning) {
+        this.displayTick = this.logicTicks;
+        this.checkSplit(this.keyState.split);
+        if (this.keyState.stop) {
+          this.timerRunning = false;
+          this.timerStarted = false;
+          this.timerFailed = false;
+        }
       }
     }
 
@@ -152,6 +161,21 @@ Game.registerMod('ccSplit', {
     this.timerL = l('srTimerTimer');
     this.timerExtraL = l('srTimerExtra');
     this.timerSplitsL = [];
+  },
+
+  unsplit: function () {
+    for (let i = this.splitData.splits.length - 1; i >= 0; i--) {
+      const split = this.splitData.splits[i];
+      if (split.type == 'manual' && split.completed != null) {
+        split.best = split.prevBest;
+        split.completed = null;
+        if (!this.timerRunning) {
+          this.timerRunning = true;
+          this.saveSplit();
+        }
+        break;
+      }
+    }
   },
 
   checkSplit: function (manualSplit = false) {
@@ -204,6 +228,7 @@ Game.registerMod('ccSplit', {
           split.completed = this.logicTicks;
           split.prevBest = split.best;
           split.best = Math.min(split.best ?? Infinity, split.completed);
+          manualSplit = false;
           this.saveSplit();
         }
         lastManual = split;
@@ -239,25 +264,57 @@ Game.registerMod('ccSplit', {
       this.timerContainerL.style.opacity = 1;
     }
 
+    if (this.timerRunning) {
+      this.timerContainerL.style.pointerEvents = 'none';
+    } else {
+      this.timerContainerL.style.pointerEvents = null;
+    }
+
     let segCount = 0;
     let failCount = 0;
+
+    let foundActiveSeq = -1;
+    let foundActiveConS = -1;
+    let foundActiveManual = -1;
 
     for (const split of this.splitData.splits) {
       if (split.type !== 'fail') {
         if (split.completed != null && split.prevBest != null) {
-          l(`srSegDelta${segCount}`).innerText = `${
+          split.deltaL.innerText = `${
             split.completed <= split.prevBest ? '-' : '+'
           }${this.tickToTime(Math.abs(split.completed - split.prevBest))}`;
         } else {
-          l(`srSegDelta${segCount}`).innerText = '';
+          split.deltaL.innerText = '';
         }
-        l(`srSegTime${segCount}`).innerText = this.tickToTime(split.completed ?? split.best ?? -1);
+        split.timeL.innerText = this.tickToTime(split.completed ?? split.best ?? -1);
+
+        if (this.timerRunning && foundActiveSeq < 0 && split.type === 'sequential' && split.completed == null) {
+          foundActiveSeq = segCount;
+          split.lineL.classList.add('sr-active-sequential');
+        } else if (split.type === 'sequential') {
+          split.lineL.classList.remove('sr-active-sequential');
+        }
+
+        if (this.timerRunning && foundActiveConS < 0 && split.type === 'consequential' && split.completed == null) {
+          foundActiveConS = segCount;
+          split.lineL.classList.add('sr-active-consequential');
+        } else if (split.type === 'consequential') {
+          split.lineL.classList.remove('sr-active-consequential');
+        }
+
+        if (this.timerRunning && foundActiveManual < 0 && split.type === 'manual' && split.completed == null) {
+          foundActiveManual = segCount;
+          split.lineL.classList.add('sr-active-manual');
+        } else if (split.type === 'manual') {
+          split.lineL.classList.remove('sr-active-manual');
+        }
+
         segCount += 1;
       } else {
         if (split.completed != null) {
-          l(`srFail${failCount}`).style.opacity = 1;
+          split.failL.style.opacity = 1;
         } else {
-          l(`srFail${failCount}`).style.opacity = 0.3;
+          split.failL.style.opacity = 0.3;
         }
         failCount += 1;
       }
@@ -286,7 +343,9 @@ Game.registerMod('ccSplit', {
         this.timerL.style.textShadow = '';
       }
 
-      this.timerL.innerHTML = `${this.timerFailed ? '[F]' : ''}${this.tickToTime(this.displayTick)}`;
+      this.timerL.innerHTML = `${this.timerFailed ? '[F]' : ''}${this.tickToTime(
+        this.displayTick
+      )}`;
     }
   },
 
@@ -381,8 +440,27 @@ Game.registerMod('ccSplit', {
       '</b><span style="user-select: all">' +
       this.hash +
       '</span></div>' +
+      '<div class="listing">' +
+      this.button('srtClearPB', 'Clear PB', 'Game.mods.ccSplit.clearPB();') +
+      '<br>' +
+      '</div>' +
       '</div>'
     );
+  },
+
+  clearPB: function () {
+    if (this.timerStarted) {
+      this.timerStarted = false;
+      this.timerRunning = false;
+      this.timerFailed = false;
+    }
+
+    for (const split of this.splitData.splits) {
+      if (split.best != null) {
+        delete split.completed;
+        delete split.best;
+      }
+    }
   },
 
   import: function (split) {
@@ -421,7 +499,7 @@ Game.registerMod('ccSplit', {
       if (split.type !== 'fail') {
         this.timerSplitContainer.insertAdjacentHTML(
           'beforeEnd',
-          `<div class="sr-split-line"><div class="sr-split-desc">${this.icon(
+          `<div class="sr-split-line" id="srSegLine${segCount}"><div class="sr-split-desc">${this.icon(
             'class="sr-split-icon"',
             split.icon || [8, 0],
             24
@@ -429,6 +507,9 @@ Game.registerMod('ccSplit', {
             split.name || 'Segment ' + segCount.toString()
           }</span></div><span class="sr-split-delta" id="srSegDelta${segCount}"></span><span class="sr-split-time" id="srSegTime${segCount}"></span></div>`
         );
+        split.lineL = l(`srSegLine${segCount}`);
+        split.deltaL = l(`srSegDelta${segCount}`);
+        split.timeL = l(`srSegTime${segCount}`);
         segCount += 1;
       } else {
         this.timerExtraL.insertAdjacentHTML(
@@ -440,6 +521,7 @@ Game.registerMod('ccSplit', {
             `<div class="sr-tooltip">${split.name || `Fail cond ${failCount}`}</div>`
           )
         );
+        split.failL = l(`srFail${failCount}`);
         failCount += 1;
       }
     }

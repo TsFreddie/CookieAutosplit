@@ -1,11 +1,10 @@
 #srTimerContainer {
   position: absolute;
   z-index: 1000000000;
-  min-width: 145px;
+  min-width: 200px;
   font-weight: bold;
   font-family: Courier, monospace;
   color: #fff;
-  cursor: move;
   z-index: 99999998;
   padding-bottom: 0;
 }
@@ -95,7 +94,7 @@
 }
 
 .sr-split-line:nth-child(even) {
-  background-color: #44444433;
+  background-color: #050505ff;
 }
 
 #srTimerTimer {
@@ -103,4 +102,16 @@
   background-color: #222222ff;
   margin-left: -8px;
   margin-right: -8px;
+}
+
+.sr-active-manual {
+  background-color: #855a0b !important;
+}
+
+.sr-active-consequential {
+  background-color: #2d8037 !important;
+}
+
+.sr-active-sequential {
+  background-color: #105218 !important;
 }
