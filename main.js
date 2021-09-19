@@ -161,6 +161,8 @@ Game.registerMod('ccSplit', {
     this.timerL = l('srTimerTimer');
     this.timerExtraL = l('srTimerExtra');
     this.timerSplitsL = [];
+
+    this.openWindow();
   },
 
   unsplit: function () {
@@ -288,21 +290,36 @@ Game.registerMod('ccSplit', {
         }
         split.timeL.innerText = this.tickToTime(split.completed ?? split.best ?? -1);
 
-        if (this.timerRunning && foundActiveSeq < 0 && split.type === 'sequential' && split.completed == null) {
+        if (
+          this.timerRunning &&
+          foundActiveSeq < 0 &&
+          split.type === 'sequential' &&
+          split.completed == null
+        ) {
           foundActiveSeq = segCount;
           split.lineL.classList.add('sr-active-sequential');
         } else if (split.type === 'sequential') {
           split.lineL.classList.remove('sr-active-sequential');
         }
 
-        if (this.timerRunning && foundActiveConS < 0 && split.type === 'consequential' && split.completed == null) {
+        if (
+          this.timerRunning &&
+          foundActiveConS < 0 &&
+          split.type === 'consequential' &&
+          split.completed == null
+        ) {
           foundActiveConS = segCount;
           split.lineL.classList.add('sr-active-consequential');
         } else if (split.type === 'consequential') {
           split.lineL.classList.remove('sr-active-consequential');
         }
 
-        if (this.timerRunning && foundActiveManual < 0 && split.type === 'manual' && split.completed == null) {
+        if (
+          this.timerRunning &&
+          foundActiveManual < 0 &&
+          split.type === 'manual' &&
+          split.completed == null
+        ) {
           foundActiveManual = segCount;
           split.lineL.classList.add('sr-active-manual');
         } else if (split.type === 'manual') {
@@ -673,6 +690,22 @@ Game.registerMod('ccSplit', {
       Game.customOptionsMenu.push(() => {
         CCSE.AppendOptionsMenu(this.prefMenu());
       });
+    }
+  },
+
+  openWindow: function () {
+    if (this.splitWin && !this.splitWin.closed) return;
+    this.splitWin = window.open(
+      `${this.dirURI}/splitWindow.html`,
+      'Autosplit',
+      'top=500,left=200,width=200,height=300,frame=false,nodeIntegration=no,autoHideMenuBar=true,alwaysOnTop=true,titleBarStyle=customButtonsOnHover'
+    );
+  },
+
+  closeWindow: function () {
+    if (this.splitWin) {
+      this.splitWin.close();
+      this.splitWin = null;
     }
   },
 });

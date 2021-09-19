@@ -1,39 +1,58 @@
 #srTimerContainer {
   position: absolute;
   z-index: 1000000000;
-  min-width: 200px;
   font-weight: bold;
   font-family: Courier, monospace;
   color: #fff;
   z-index: 99999998;
-  padding-bottom: 0;
+  padding: 0;
+  margin-left: -0.5px;
+  margin-top: -0.5px;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+}
+
+#srTimerSplitContainer {
+  overflow: auto;
+  flex-grow: 1;
 }
 
 #srTimerTitle {
   text-align: center;
-  margin: 6px;
+  -webkit-app-region: drag;
+  width: calc(100% + 4px);
+  padding-left: 6px;
+  padding-right: 6px;
+  padding-bottom: 6px;
+  padding-top: 14px;
+  margin-top: -8px;
+  margin-left: -8px;
+  margin-right: -8px;
+  cursor: move;
 }
 
 #srTimerTimer {
   font-size: 24px;
   text-align: right;
-  min-height: 1em;
+  height: 24px;
+  width: 100%;
 }
 
 .sr-split-delta {
-
+  margin-left: 10px;
+  margin-right: 10px;
 }
 
 .sr-split-time {
-  margin-right: 8px;
+  margin-left: 10px;
+  margin-right: 10px;
 }
 
 .sr-split-line {
   display: flex;
   justify-content: space-between;
   flex-direction: row;
-  margin-left: -8px;
-  margin-right: -8px;
   padding-top: 6px;
   padding-bottom: 2px;
   text-align: left;
@@ -100,8 +119,6 @@
 #srTimerTimer {
   padding-top: 6px;
   background-color: #222222ff;
-  margin-left: -8px;
-  margin-right: -8px;
 }
 
 .sr-active-manual {
