@@ -260,110 +260,110 @@ Game.registerMod('ccSplit', {
   },
 
   draw: function () {
-    if (Game.onMenu) {
-      this.timerContainerL.style.opacity = 0.3;
-    } else {
-      this.timerContainerL.style.opacity = 1;
-    }
+    // if (Game.onMenu) {
+    //   this.timerContainerL.style.opacity = 0.3;
+    // } else {
+    //   this.timerContainerL.style.opacity = 1;
+    // }
 
-    if (this.timerRunning) {
-      this.timerContainerL.style.pointerEvents = 'none';
-    } else {
-      this.timerContainerL.style.pointerEvents = null;
-    }
+    // if (this.timerRunning) {
+    //   this.timerContainerL.style.pointerEvents = 'none';
+    // } else {
+    //   this.timerContainerL.style.pointerEvents = null;
+    // }
 
-    let segCount = 0;
-    let failCount = 0;
+    // let segCount = 0;
+    // let failCount = 0;
 
-    let foundActiveSeq = -1;
-    let foundActiveConS = -1;
-    let foundActiveManual = -1;
+    // let foundActiveSeq = -1;
+    // let foundActiveConS = -1;
+    // let foundActiveManual = -1;
 
-    for (const split of this.splitData.splits) {
-      if (split.type !== 'fail') {
-        if (split.completed != null && split.prevBest != null) {
-          split.deltaL.innerText = `${
-            split.completed <= split.prevBest ? '-' : '+'
-          }${this.tickToTime(Math.abs(split.completed - split.prevBest))}`;
-        } else {
-          split.deltaL.innerText = '';
-        }
-        split.timeL.innerText = this.tickToTime(split.completed ?? split.best ?? -1);
+    // for (const split of this.splitData.splits) {
+    //   if (split.type !== 'fail') {
+    //     if (split.completed != null && split.prevBest != null) {
+    //       split.deltaL.innerText = `${
+    //         split.completed <= split.prevBest ? '-' : '+'
+    //       }${this.tickToTime(Math.abs(split.completed - split.prevBest))}`;
+    //     } else {
+    //       split.deltaL.innerText = '';
+    //     }
+    //     split.timeL.innerText = this.tickToTime(split.completed ?? split.best ?? -1);
 
-        if (
-          this.timerRunning &&
-          foundActiveSeq < 0 &&
-          split.type === 'sequential' &&
-          split.completed == null
-        ) {
-          foundActiveSeq = segCount;
-          split.lineL.classList.add('sr-active-sequential');
-        } else if (split.type === 'sequential') {
-          split.lineL.classList.remove('sr-active-sequential');
-        }
+    //     if (
+    //       this.timerRunning &&
+    //       foundActiveSeq < 0 &&
+    //       split.type === 'sequential' &&
+    //       split.completed == null
+    //     ) {
+    //       foundActiveSeq = segCount;
+    //       split.lineL.classList.add('sr-active-sequential');
+    //     } else if (split.type === 'sequential') {
+    //       split.lineL.classList.remove('sr-active-sequential');
+    //     }
 
-        if (
-          this.timerRunning &&
-          foundActiveConS < 0 &&
-          split.type === 'consequential' &&
-          split.completed == null
-        ) {
-          foundActiveConS = segCount;
-          split.lineL.classList.add('sr-active-consequential');
-        } else if (split.type === 'consequential') {
-          split.lineL.classList.remove('sr-active-consequential');
-        }
+    //     if (
+    //       this.timerRunning &&
+    //       foundActiveConS < 0 &&
+    //       split.type === 'consequential' &&
+    //       split.completed == null
+    //     ) {
+    //       foundActiveConS = segCount;
+    //       split.lineL.classList.add('sr-active-consequential');
+    //     } else if (split.type === 'consequential') {
+    //       split.lineL.classList.remove('sr-active-consequential');
+    //     }
 
-        if (
-          this.timerRunning &&
-          foundActiveManual < 0 &&
-          split.type === 'manual' &&
-          split.completed == null
-        ) {
-          foundActiveManual = segCount;
-          split.lineL.classList.add('sr-active-manual');
-        } else if (split.type === 'manual') {
-          split.lineL.classList.remove('sr-active-manual');
-        }
+    //     if (
+    //       this.timerRunning &&
+    //       foundActiveManual < 0 &&
+    //       split.type === 'manual' &&
+    //       split.completed == null
+    //     ) {
+    //       foundActiveManual = segCount;
+    //       split.lineL.classList.add('sr-active-manual');
+    //     } else if (split.type === 'manual') {
+    //       split.lineL.classList.remove('sr-active-manual');
+    //     }
 
-        segCount += 1;
-      } else {
-        if (split.completed != null) {
-          split.failL.style.opacity = 1;
-        } else {
-          split.failL.style.opacity = 0.3;
-        }
-        failCount += 1;
-      }
-    }
+    //     segCount += 1;
+    //   } else {
+    //     if (split.completed != null) {
+    //       split.failL.style.opacity = 1;
+    //     } else {
+    //       split.failL.style.opacity = 0.3;
+    //     }
+    //     failCount += 1;
+    //   }
+    // }
 
-    if (this.splitData.splits.length === 0) {
-      this.timerL.style.color = '#fff';
-      this.timerL.style.textShadow = '0px -1px 1px #09f, 0px 1px 1px #f04';
-      this.timerL.innerHTML =
-        '<span style="font-size:12px;text-align:center;width:100%;display:inline-block">' +
-        loc('Please import split data') +
-        '</span>';
-    } else if (!this.timerStarted) {
-      this.timerL.style.color = '#fff';
-      this.timerL.style.textShadow = '0px -1px 1px #09f, 0px 1px 1px #f04';
-      this.timerL.innerHTML =
-        '<span style="font-size:12px;text-align:center;width:100%;display:inline-block">' +
-        loc('Wipe save to start') +
-        '</span>';
-    } else {
-      if (this.timerRunning) {
-        this.timerL.style.color = '#fff';
-        this.timerL.style.textShadow = '0px -1px 1px #09f, 0px 1px 1px #f04';
-      } else {
-        this.timerL.style.color = '#f33';
-        this.timerL.style.textShadow = '';
-      }
+    // if (this.splitData.splits.length === 0) {
+    //   this.timerL.style.color = '#fff';
+    //   this.timerL.style.textShadow = '0px -1px 1px #09f, 0px 1px 1px #f04';
+    //   this.timerL.innerHTML =
+    //     '<span style="font-size:12px;text-align:center;width:100%;display:inline-block">' +
+    //     loc('Please import split data') +
+    //     '</span>';
+    // } else if (!this.timerStarted) {
+    //   this.timerL.style.color = '#fff';
+    //   this.timerL.style.textShadow = '0px -1px 1px #09f, 0px 1px 1px #f04';
+    //   this.timerL.innerHTML =
+    //     '<span style="font-size:12px;text-align:center;width:100%;display:inline-block">' +
+    //     loc('Wipe save to start') +
+    //     '</span>';
+    // } else {
+    //   if (this.timerRunning) {
+    //     this.timerL.style.color = '#fff';
+    //     this.timerL.style.textShadow = '0px -1px 1px #09f, 0px 1px 1px #f04';
+    //   } else {
+    //     this.timerL.style.color = '#f33';
+    //     this.timerL.style.textShadow = '';
+    //   }
 
-      this.timerL.innerHTML = `${this.timerFailed ? '[F]' : ''}${this.tickToTime(
-        this.displayTick
-      )}`;
-    }
+    //   this.timerL.innerHTML = `${this.timerFailed ? '[F]' : ''}${this.tickToTime(
+    //     this.displayTick
+    //   )}`;
+    // }
   },
 
   export: function () {
@@ -497,54 +497,24 @@ Game.registerMod('ccSplit', {
       return false;
     }
     this.splitHash();
+    this.initWindow();
+    this.saveSplit();
+    return true;
+  },
 
-    // update split window
-    this.timerTitleL.innerHTML = this.splitData.name;
-
-    // remove splits
-    while (this.timerSplitContainer.firstChild) {
-      this.timerSplitContainer.removeChild(this.timerSplitContainer.firstChild);
-    }
-    // remove extras
-    while (this.timerExtraL.firstChild) {
-      this.timerExtraL.removeChild(this.timerExtraL.firstChild);
-    }
-
+  initWindow: function() {
+    this.windowEval('clearSplits');
     let segCount = 0;
     let failCount = 0;
     for (const split of this.splitData.splits) {
       if (split.type !== 'fail') {
-        this.timerSplitContainer.insertAdjacentHTML(
-          'beforeEnd',
-          `<div class="sr-split-line" id="srSegLine${segCount}"><div class="sr-split-desc">${this.icon(
-            'class="sr-split-icon"',
-            split.icon || [8, 0],
-            24
-          )}<span class="sr-split-name">${
-            split.name || 'Segment ' + segCount.toString()
-          }</span></div><span class="sr-split-delta" id="srSegDelta${segCount}"></span><span class="sr-split-time" id="srSegTime${segCount}"></span></div>`
-        );
-        split.lineL = l(`srSegLine${segCount}`);
-        split.deltaL = l(`srSegDelta${segCount}`);
-        split.timeL = l(`srSegTime${segCount}`);
+        this.windowEval('addSplit', {id: segCount, split});
         segCount += 1;
       } else {
-        this.timerExtraL.insertAdjacentHTML(
-          'beforeEnd',
-          this.icon(
-            `class="sr-fail-icon" id="srFail${failCount}"`,
-            split.icon || [1, 7],
-            24,
-            `<div class="sr-tooltip">${split.name || `Fail cond ${failCount}`}</div>`
-          )
-        );
-        split.failL = l(`srFail${failCount}`);
+        // do window eval for fail split
         failCount += 1;
       }
     }
-
-    this.saveSplit();
-    return true;
   },
 
   icon: function (attr = '', icon = null, size = 48, content = '') {
@@ -695,17 +665,30 @@ Game.registerMod('ccSplit', {
 
   openWindow: function () {
     if (this.splitWin && !this.splitWin.closed) return;
+    const preload = `"${this.dirURI}/splitWindowPreload.js"`;
+    console.log(preload);
     this.splitWin = window.open(
       `${this.dirURI}/splitWindow.html`,
       'Autosplit',
-      'top=500,left=200,width=200,height=300,frame=false,nodeIntegration=no,autoHideMenuBar=true,alwaysOnTop=true,titleBarStyle=customButtonsOnHover'
+      `top=500,left=200,width=200,height=300,frame=true,nodeIntegration=true,autoHideMenuBar=true,titleBarStyle=customButtonsOnHover,preload=${preload},alwaysOnTop=true`
     );
+    this.splitWin.eval('clearSplits()');
   },
 
   closeWindow: function () {
-    if (this.splitWin) {
+    if (this.splitWin && !this.splitWin.closed) {
       this.splitWin.close();
       this.splitWin = null;
     }
   },
+
+  windowEval: function(funcName, argObj) {
+    if (this.splitWin && !this.splitWin.closed) {
+      if (!argObj) {
+        this.splitWin.eval(`${funcName}();`);
+      } else {
+        this.splitWin.eval(`${funcName}(${JSON.stringify(argObj)});`);
+      }
+    }
+  }
 });
